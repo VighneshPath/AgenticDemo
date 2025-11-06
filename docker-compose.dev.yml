@@ -1,0 +1,55 @@
+# Docker Compose development configuration
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agentic-platform-backend-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:80,http://frontend
+    volumes:
+      - ./backend:/app
+      - ./backend/data:/app/data
+      - ./backend/static:/app/static
+    networks:
+      - agentic-network
+    restart: unless-stopped
+    command:
+      [
+        "python",
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+      ]
+
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: agentic-platform-frontend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - agentic-network
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+networks:
+  agentic-network:
+    driver: bridge
