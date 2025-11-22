@@ -1,13 +1,13 @@
-from typing import TypedDict, Dict, List
+from typing import TypedDict, Dict, List, Union
 from langgraph.graph import StateGraph, START, END
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from dotenv import load_dotenv
 
 load_dotenv()
 
 class AgentState(TypedDict):
-    messages: List[HumanMessage]
+    messages: List[Union[HumanMessage, AIMessage]]
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.0-flash-lite"
@@ -15,12 +15,15 @@ llm = ChatGoogleGenerativeAI(
 
 def process(state: AgentState) -> AgentState:
     """
-        Simple node that processes agent state
+        This node will solve the request you input
     """
 
     response = llm.invoke(state["messages"])
 
+    state['messages'].append(AIMessage(content = response.content))
+
     print(f"AI: {response.content}")
+
     return state
 
 
@@ -34,8 +37,17 @@ graph.add_edge("process", END)
 
 agent = graph.compile()
 
+conversation_history = []
+
 user_input = input("Enter: ")
 
-result = agent.invoke({"messages": [HumanMessage(content = user_input)]})
 
-print(result)
+while user_input != 'exit':
+    conversation_history.append(HumanMessage(user_input))
+
+    result = agent.invoke({'messages': conversation_history})
+
+    print(result['messages'])
+    conversation_history = result['messages']
+
+    user_input = input("Enter: ")
