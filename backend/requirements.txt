@@ -14,3 +14,4 @@ langchain-community>=0.4.1
 langchain-chroma
 
 pypdf
+docx2txt
