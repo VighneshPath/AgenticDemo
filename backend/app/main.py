@@ -6,6 +6,7 @@ Provides foundational structure for multi-agent system development.
 from app.routers import documents
 from app.routers import beach
 from app.routers import people
+from app.routers import agent
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -70,7 +71,8 @@ async def root():
         "endpoints": {
             "people": "/api/people",
             "beach": "/api/beach",
-            "documents": "/api/docs"
+            "documents": "/api/docs",
+            "agent": "/api/agent"
         }
     }
 
@@ -84,6 +86,8 @@ async def health_check():
 
 app.include_router(people.router, prefix="/api", tags=["people"])
 app.include_router(beach.router, prefix="/api", tags=["beach"])
+
+app.include_router(agent.router, prefix="/api", tags=["agent"])
 
 # Documents router for policy document access
 app.include_router(documents.router, prefix="/api", tags=["documents"])

@@ -27,7 +27,7 @@ class AgentState(TypedDict):
 
 def tool_node(state: AgentState) -> AgentState:
     """Execute tool calls from LLMs response"""
-
+    print(f"Tool call")
     result = []
     for tool_call in state["messages"][-1].tool_calls:
         tool_fn = tools[tool_call["name"]]
@@ -55,6 +55,7 @@ It gives you details of all people on the beach
 
 def call_llm(state: AgentState) -> AgentState:
     """Function to call the LLM with the current state"""
+    print("Call LLM")
     messages = list(state['messages'])
     messages = [SystemMessage(content = system_prompt)] + messages
 

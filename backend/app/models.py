@@ -89,3 +89,9 @@ class BeachResponse(BaseModel):
     people_on_beach: list[Person]
     total_count: int
     last_updated: datetime
+
+class AgentResponse(BaseModel):
+    data: str
+
+class AgentRequest(BaseModel):
+    data: str
