@@ -9,9 +9,9 @@ def call_sql(query: str) -> str:
     This tool calls the database using the query param that is passed. It should only be called for SELECT statements.
     It returns the output in json format which does not have any fixed schema.  
     """
-    print(f"running query: {query}")
+    # print(f"running query: {query}")
     response = asyncio.run(_call_sql(query = query))
-    print(f"got response: {response}")
+    # print(f"got response: {response}")
     return response
 
 async def _call_sql(query: str) -> str:
