@@ -79,11 +79,11 @@ graph.add_conditional_edges(
 graph.add_edge("sql_agent", "llm")
 graph.set_entry_point("llm")
 
-rag_agent = graph.compile()
+orchestrator_agent = graph.compile()
 
 
 def running_agent():
-    print("\n==RAG AGENT==\n")
+    print("\n==SQL AGENT==\n")
 
     while True:
         user_input = input("What is your question?\n")
@@ -93,9 +93,9 @@ def running_agent():
 
         initial_message = [HumanMessage(content = user_input)]
 
-        result = rag_agent.invoke({"messages": initial_message})
+        result = orchestrator_agent.invoke({"messages": initial_message})
 
         print("\n==ANSWER==\n")
         print(result['messages'][-1].content)
 
-running_agent()
+# running_agent()

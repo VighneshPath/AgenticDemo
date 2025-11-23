@@ -1,12 +1,11 @@
-from typing import TypedDict, Annotated, Sequence
-from langgraph.graph import StateGraph, END
-from langchain_core.messages import BaseMessage # Foundational class for all message types
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
+from typing import Annotated, Iterable, Sequence, TypedDict
+from app.agents.orchestrator.tools import *
 from dotenv import load_dotenv
 from langgraph.graph.message import add_messages
-
-from app.agents.api_agent.tools import call_api
+from langchain_core.messages import BaseMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
+from langgraph.graph import StateGraph, START, END
 
 
 load_dotenv()
@@ -15,20 +14,17 @@ llm = ChatGoogleGenerativeAI(
     model = "gemini-2.0-flash-lite", temperature = 0
 )
 
-tools = {
-    call_api.name: call_api
-}
-
-llm = llm.bind_tools(tools = list(tools.values()))
-
-
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
+
+tools = {call_sql_agent.name: call_sql_agent, call_api_agent.name: call_api_agent, call_rag_agent.name: call_rag_agent}
+llm = llm.bind_tools(tools = list(tools.values()))
 
 def tool_node(state: AgentState) -> AgentState:
     """Execute tool calls from LLMs response"""
 
     result = []
+    print(state)
     for tool_call in state["messages"][-1].tool_calls:
         tool_fn = tools[tool_call["name"]]
         observation = tool_fn.invoke(tool_call["args"])
@@ -37,20 +33,14 @@ def tool_node(state: AgentState) -> AgentState:
     return {"messages": result}
 
 def should_continue(state: AgentState):
-    """Check if last message contains tool calls"""
+    """Check if last message contains tool calls or there is something more to be done"""
     last = state["messages"][-1]
     if hasattr(last, "tool_calls") and last.tool_calls:
         return "continue"
     return "end"
 
 system_prompt = """
-You can answer any requests related to beach.
-
-For this you have a tool that can call the beach API, it has information about everything related to beach.
-
-If someone asks for a specific person or thing, you can still call the API and filter the response.
-
-It gives you details of all people on the beach
+You will get a user query about Sahaj Software, try to answer the user as best as you can.
 """
 
 def call_llm(state: AgentState) -> AgentState:
@@ -63,23 +53,23 @@ def call_llm(state: AgentState) -> AgentState:
 
 graph = StateGraph(AgentState)
 graph.add_node("llm", call_llm)
-graph.add_node("api_agent", tool_node)
+graph.add_node("orchestrator_agent", tool_node)
 graph.add_conditional_edges(
     "llm",
     should_continue,
     {
-        'continue': "api_agent",
+        'continue': "orchestrator_agent",
         'end': END
     }
 )
-graph.add_edge("api_agent", "llm")
+graph.add_edge("orchestrator_agent", "llm")
 graph.set_entry_point("llm")
 
-api_agent = graph.compile()
+orchestrator_agent = graph.compile()
 
 
 def running_agent():
-    print("\n==API AGENT==\n")
+    print("\n==ORCHESTRATOR AGENT==\n")
 
     while True:
         user_input = input("What is your question?\n")
@@ -89,9 +79,10 @@ def running_agent():
 
         initial_message = [HumanMessage(content = user_input)]
 
-        result = api_agent.invoke({"messages": initial_message})
+        result = orchestrator_agent.invoke({"messages": initial_message})
 
         print("\n==ANSWER==\n")
         print(result['messages'][-1].content)
 
-# running_agent()
+if __name__ == "__main__":
+    running_agent()
